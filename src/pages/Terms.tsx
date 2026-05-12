@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Cpu, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 
 const sections = [
   { title: "Acceptance of Terms", content: "By accessing or using AgentBuilder, you agree to be bound by these Terms of Service. If you do not agree, do not use the platform." },

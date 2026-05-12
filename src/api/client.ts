@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:8000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
+export { API_BASE_URL };
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -21,7 +22,6 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Handle token expiration / unauthorized
       localStorage.removeItem("access_token");
       if (!window.location.pathname.startsWith("/auth")) {
         window.location.href = "/auth/login";

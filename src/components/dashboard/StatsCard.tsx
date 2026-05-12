@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
-import { Card } from "../ui/Card";
 import { cn } from "../../lib/utils";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 interface StatsCardProps {
   label: string;
@@ -16,31 +16,34 @@ interface StatsCardProps {
 
 export default function StatsCard({ label, value, icon: Icon, trend, className, iconClassName }: StatsCardProps) {
   return (
-    <Card className={cn("p-6 overflow-hidden relative group hover:border-primary/30 transition-all", className)}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground font-medium mb-1">{label}</p>
-          <h3 className="text-3xl font-bold tracking-tight">{value}</h3>
-          
+    <div className={cn("glass-card p-6 group relative overflow-hidden", className)}>
+      {/* Background Glow */}
+      <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-gradient-to-br from-[#6366f1]/10 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+      <div className="flex items-start justify-between relative z-10">
+        <div className="flex-1">
+          <p className="text-sm text-slate-400 font-medium mb-2">{label}</p>
+          <h3 className="text-4xl font-bold tracking-tight text-white">{value}</h3>
+
           {trend && (
-            <p className={cn(
-              "text-xs mt-2 flex items-center gap-1",
-              trend.isUp ? "text-green-500" : "text-red-500"
+            <div className={cn(
+              "flex items-center gap-1.5 mt-3 text-xs font-medium px-2 py-1 rounded-full w-fit",
+              trend.isUp ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20" : "text-red-400 bg-red-500/10 border border-red-500/20"
             )}>
-              <span>{trend.isUp ? "↑" : "↓"}</span>
-              <span className="font-medium">{trend.value}%</span>
-              <span className="text-muted-foreground">vs last week</span>
-            </p>
+              {trend.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              <span>{trend.value}%</span>
+              <span className="text-slate-500 ml-1">vs last week</span>
+            </div>
           )}
         </div>
 
-        <div className={cn("p-4 rounded-2xl bg-muted group-hover:scale-110 transition-transform", iconClassName)}>
-          <Icon className="text-foreground" size={24} />
+        <div className={cn(
+          "p-3 rounded-xl transition-all duration-300 group-hover:scale-110",
+          iconClassName || "bg-[#6366f1]/10 border border-[#6366f1]/20"
+        )}>
+          <Icon className="text-[#6366f1] group-hover:text-[#8b5cf6]" size={22} />
         </div>
       </div>
-      
-      {/* Subtle background decoration */}
-      <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
-    </Card>
+    </div>
   );
 }

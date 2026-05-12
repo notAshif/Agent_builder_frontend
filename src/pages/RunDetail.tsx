@@ -24,6 +24,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
 import LogTimeline from "../components/runs/LogTimeline";
 import FlowVisualization from "../components/runs/FlowVisualization";
+import RichOutput from "../components/runs/RichOutput";
+import { useEventStream } from "../hooks/useEventStream";
+import { getRunStreamUrl } from "../api/events";
 
 export default function RunDetail() {
   const { id } = useParams();
@@ -33,7 +36,7 @@ export default function RunDetail() {
   const [flowData, setFlowData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("logs");
   const [isLoading, setIsLoading] = useState(true);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const initialFetchDone = useRef(false);
 
   const fetchRunData = async (silent = false) => {
     if (!id) return;
@@ -54,23 +57,44 @@ export default function RunDetail() {
       if (!silent) toast.error("Failed to fetch run details");
     } finally {
       if (!silent) setIsLoading(false);
+      initialFetchDone.current = true;
     }
   };
 
   useEffect(() => {
+    initialFetchDone.current = false;
     fetchRunData();
+  }, [id]);
 
-    // Setup polling if run is active
-    if (run?.status === "RUNNING" || run?.status === "PENDING") {
-      pollingRef.current = setInterval(() => fetchRunData(true), 3000);
-    } else {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    }
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, [id, run?.status]);
+  useEventStream({
+    url: id ? getRunStreamUrl(id) : "",
+    enabled: !!id && initialFetchDone.current,
+    handlers: {
+      "run:updated": (data: any) => {
+        setRun(prev => prev ? { ...prev, status: data.status, startedAt: data.startedAt } : prev);
+      },
+      "run:completed": (data: any) => {
+        setRun(prev => prev ? { ...prev, ...data } : prev);
+        toast.success("Agent run completed");
+      },
+      "run:failed": (data: any) => {
+        setRun(prev => prev ? { ...prev, ...data } : prev);
+        toast.error("Agent run failed");
+      },
+      "log:created": (log: any) => {
+        setLogs(prev => [...prev, log]);
+      },
+      "execution:created": (exec: any) => {
+        setExecutions(prev => [...prev, exec]);
+      },
+      "execution:completed": (exec: any) => {
+        setExecutions(prev => prev.map(e => e.id === exec.id ? { ...e, ...exec } : e));
+      },
+      "run:cancelled": (_data: any) => {
+        setRun(prev => prev ? { ...prev, status: "CANCELLED" } : prev);
+      },
+    },
+  });
 
   const handleCancel = async () => {
     if (!id) return;
@@ -85,7 +109,7 @@ export default function RunDetail() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !run) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <Loader2 className="animate-spin text-primary" size={40} />
@@ -111,7 +135,9 @@ export default function RunDetail() {
             run.status === "FAILED" ? "bg-red-500/10 text-red-500" : "bg-blue-500/10 text-blue-500"
           )}>
             {run.status === "COMPLETED" ? <CheckCircle2 size={28} /> : 
-             run.status === "FAILED" ? <AlertCircle size={28} /> : <RefreshCw size={28} className="animate-spin" />}
+             run.status === "FAILED" ? <AlertCircle size={28} /> : 
+             run.status === "CANCELLED" ? <XCircle size={28} /> :
+             <RefreshCw size={28} className="animate-spin" />}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -122,6 +148,12 @@ export default function RunDetail() {
               }>
                 {run.status}
               </Badge>
+              {(run.status === "RUNNING" || run.status === "PENDING") && (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-1 font-mono">{run.id}</p>
           </div>
@@ -142,7 +174,6 @@ export default function RunDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          {/* IO Section */}
           <div className="space-y-4">
             <Card className="border-border/50">
               <CardHeader className="py-4 bg-muted/20">
@@ -170,7 +201,7 @@ export default function RunDetail() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-6">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{run.output}</p>
+                      <RichOutput text={run.output} />
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -192,7 +223,6 @@ export default function RunDetail() {
             )}
           </div>
 
-          {/* Visualization & Logs Tabs */}
           <div className="space-y-4">
             <div className="flex border-b border-border gap-6">
               {[
@@ -212,6 +242,12 @@ export default function RunDetail() {
                 >
                   <tab.icon size={14} />
                   {tab.label}
+                  {tab.id === "logs" && logs.length > 0 && (
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full ml-1">{logs.length}</span>
+                  )}
+                  {tab.id === "executions" && executions.length > 0 && (
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full ml-1">{executions.length}</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -225,7 +261,7 @@ export default function RunDetail() {
                 transition={{ duration: 0.15 }}
               >
                 {activeTab === "flow" && (
-                  <FlowVisualization data={flowData} />
+                  <FlowVisualization data={flowData} runStatus={run?.status} executions={executions} />
                 )}
                 
                 {activeTab === "logs" && (
@@ -234,35 +270,47 @@ export default function RunDetail() {
 
                 {activeTab === "executions" && (
                   <div className="space-y-4">
-                    {executions.map((exec) => (
-                      <Card key={exec.id} className="border-border/50 bg-muted/10">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                                <Cpu size={16} />
+                    {executions.length === 0 ? (
+                      <p className="text-center text-muted-foreground italic py-8">No tool executions yet.</p>
+                    ) : (
+                      executions.map((exec) => (
+                        <Card key={exec.id} className="border-border/50 bg-muted/10">
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                                  <Cpu size={16} />
+                                </div>
+                                <span className="font-bold text-sm">{exec.tool?.name || exec.toolName || "Tool"}</span>
+                                <Badge variant={
+                                  exec.status === "COMPLETED" ? "success" :
+                                  exec.status === "FAILED" ? "danger" : "default"
+                                } className="text-[10px]">
+                                  {exec.status}
+                                </Badge>
                               </div>
-                              <span className="font-bold text-sm">{exec.tool.name}</span>
+                              {exec.durationMs && (
+                                <Badge variant="outline">{exec.durationMs}ms</Badge>
+                              )}
                             </div>
-                            <Badge variant="outline">{exec.duration}ms</Badge>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <p className="text-[10px] text-muted-foreground uppercase font-bold">Input</p>
-                              <pre className="p-2 rounded bg-black/40 text-[10px] overflow-x-auto">
-                                {JSON.stringify(exec.input, null, 2)}
-                              </pre>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold">Input</p>
+                                <pre className="p-2 rounded bg-black/40 text-[10px] overflow-x-auto">
+                                  {JSON.stringify(exec.input, null, 2)}
+                                </pre>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold">Output</p>
+                                <pre className="p-2 rounded bg-black/40 text-[10px] overflow-x-auto">
+                                  {JSON.stringify(exec.output, null, 2)}
+                                </pre>
+                              </div>
                             </div>
-                            <div className="space-y-1">
-                              <p className="text-[10px] text-muted-foreground uppercase font-bold">Output</p>
-                              <pre className="p-2 rounded bg-black/40 text-[10px] overflow-x-auto">
-                                {JSON.stringify(exec.output, null, 2)}
-                              </pre>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
                   </div>
                 )}
               </motion.div>
@@ -309,12 +357,21 @@ export default function RunDetail() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-muted-foreground">Tool Calls</span>
-                    <Badge variant="secondary">{run._count?.toolExecution || 0}</Badge>
+                    <Badge variant="secondary">{executions.length || run._count?.toolExecution || 0}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-muted-foreground">Logs Generated</span>
-                    <Badge variant="secondary">{run._count?.logs || 0}</Badge>
+                    <Badge variant="secondary">{logs.length || run._count?.logs || 0}</Badge>
                   </div>
+                  {(run.status === "RUNNING" || run.status === "PENDING") && (
+                    <div className="flex items-center gap-2 text-xs text-green-500 mt-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                      </span>
+                      Live updates active
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -329,7 +386,9 @@ export default function RunDetail() {
                 <p className="text-sm font-bold">Need more power?</p>
                 <p className="text-xs text-muted-foreground mt-1">Upgrade your compute plan to reduce latency and increase token limits.</p>
               </div>
-              <Button size="sm" className="w-full" variant="outline">Learn More</Button>
+              <Link to="/pricing" className="w-full">
+                <Button size="sm" className="w-full" variant="outline">Learn More</Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

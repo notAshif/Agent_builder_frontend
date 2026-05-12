@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Cpu, Calendar, ArrowRight, Clock, Sparkles } from "lucide-react";
+import { Calendar, Clock, Sparkles } from "lucide-react";
 import { Badge } from "../components/ui/Badge";
 
 const posts = [

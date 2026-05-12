@@ -22,6 +22,12 @@ export interface Agent {
     model?: string;
     maxToken?: number;
     temperature?: number;
+    destinations?: Array<{
+      type: "EMAIL" | "WEBHOOK";
+      target: string;
+      label?: string;
+      config?: Record<string, unknown>;
+    }>;
   };
   userId: string;
   createdAt: string;
@@ -64,6 +70,7 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  avatarUrl?: string | null;
   createdAt: string;
 }
 

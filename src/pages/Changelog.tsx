@@ -1,7 +1,5 @@
 import { motion } from "framer-motion";
-import { Cpu, Sparkles, Bug, Zap, Shield, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Button } from "../components/ui/Button";
+import { Cpu, Sparkles, Bug, Zap, Shield } from "lucide-react";
 import { Badge } from "../components/ui/Badge";
 
 const releases = [
@@ -44,7 +42,9 @@ const releases = [
   },
 ];
 
-const typeConfig = {
+type ChangeType = 'feature' | 'enhancement' | 'fix';
+
+const typeConfig: Record<ChangeType, { icon: typeof Sparkles; color: string; label: string }> = {
   feature: { icon: Sparkles, color: "text-emerald-400", label: "Feature" },
   enhancement: { icon: Zap, color: "text-amber-400", label: "Enhancement" },
   fix: { icon: Bug, color: "text-blue-400", label: "Fix" },
@@ -82,7 +82,7 @@ export default function Changelog() {
                 </div>
                 <div className="space-y-3">
                   {release.changes.map((change) => {
-                    const config = typeConfig[change.type];
+                    const config = typeConfig[change.type as ChangeType];
                     return (
                       <div key={change.text} className="flex items-start gap-3 text-sm">
                         <config.icon size={16} className={`${config.color} mt-0.5 shrink-0`} />

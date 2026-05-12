@@ -10,12 +10,20 @@ import {
   Loader2,
   Terminal,
   Cpu,
-  Share2
+  Share2,
+  MessageSquare,
+  GitBranch,
+  Network,
+  CheckCircle2,
+  Wrench,
+  Check
 } from "lucide-react";
 import { agentApi } from "../api/agent";
+import { toolApi } from "../api/tool";
 import type { Agent, AgentRun } from "../types";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
+import { apiClient } from "../api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Label } from "../components/ui/Label";
 import { toast } from "sonner";
@@ -23,6 +31,12 @@ import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
 import { Textarea } from "../components/ui/Textarea";
+import SchedulePanel from "../components/agents/SchedulePanel";
+import OutputDestinations from "../components/agents/OutputDestinations";
+import ConversationChat from "../components/agents/ConversationChat";
+import WorkflowBuilder from "../components/agents/WorkflowBuilder";
+import AgentLogicGraph from "../components/agents/AgentLogicGraph";
+import { MODEL_OPTIONS, getModelInfo } from "../lib/models";
 
 export default function AgentDetail() {
   const { id } = useParams();
@@ -34,6 +48,8 @@ export default function AgentDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [runInput, setRunInput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [workflowResult, setWorkflowResult] = useState<any>(null);
+  const [workflowExecuting, setWorkflowExecuting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,8 +72,12 @@ export default function AgentDetail() {
 
   const handleShare = () => {
     const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    toast.success("Agent link copied to clipboard!");
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      toast.success("Agent link copied to clipboard!");
+    } else {
+      prompt("Copy this agent link:", url);
+    }
   };
 
   const handleDelete = async () => {
@@ -139,6 +159,9 @@ export default function AgentDetail() {
         {[
           { id: "overview", label: "Overview", icon: Cpu },
           { id: "run", label: "Run Agent", icon: Play },
+          { id: "chat", label: "Chat", icon: MessageSquare },
+          { id: "workflows", label: "Workflows", icon: GitBranch },
+          { id: "logic-graph", label: "Logic Graph", icon: Network },
           { id: "runs", label: "History", icon: History },
           { id: "settings", label: "Config", icon: SettingsIcon },
         ].map((tab) => (
@@ -178,13 +201,17 @@ export default function AgentDetail() {
                   </div>
                   <div className="pt-4">
                     <h4 className="text-sm font-semibold mb-3">Capabilities</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {agent.tools?.map((t: any) => (
-                        <Badge key={t.tool.id} variant="secondary" className="px-3 py-1">
-                          {t.tool.name}
-                        </Badge>
-                      ))}
-                    </div>
+                    {agent.tools && agent.tools.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {agent.tools.map((t: any) => (
+                          <Badge key={t.tool.id} variant="secondary" className="px-3 py-1">
+                            {t.tool.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">No tools assigned. Add tools in the Config tab.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -230,19 +257,112 @@ export default function AgentDetail() {
                   <CardContent className="space-y-4">
                     <div className="space-y-1">
                       <p className="text-[10px] text-muted-foreground uppercase font-bold">Model</p>
-                      <p className="text-sm font-medium">{agent.config.model || "gpt-4o"}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{getModelInfo(agent.config.model).label}</p>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                          getModelInfo(agent.config.model).provider === "openai" ? "bg-green-500/10 text-green-500" :
+                          getModelInfo(agent.config.model).provider === "anthropic" ? "bg-orange-500/10 text-orange-500" :
+                          getModelInfo(agent.config.model).provider === "gemini" ? "bg-blue-500/10 text-blue-500" :
+                          getModelInfo(agent.config.model).provider === "openrouter" ? "bg-purple-500/10 text-purple-500" :
+                          "bg-gray-500/10 text-gray-500"
+                        }`}>
+                          {getModelInfo(agent.config.model).badge}
+                        </span>
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <p className="text-[10px] text-muted-foreground uppercase font-bold">Temperature</p>
-                      <p className="text-sm font-medium">{agent.config.temperature || 0.7}</p>
+                      <p className="text-sm font-medium">{agent.config.temperature ?? 0.7}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-[10px] text-muted-foreground uppercase font-bold">Max Tokens</p>
-                      <p className="text-sm font-medium">{agent.config.maxToken || 4096}</p>
+                      <p className="text-sm font-medium">{agent.config.maxToken ?? 4096}</p>
                     </div>
                   </CardContent>
                 </Card>
+
+                <SchedulePanel agentId={agent.id} />
               </div>
+            </div>
+          )}
+
+          {activeTab === "chat" && (
+            <div className="max-w-2xl mx-auto">
+              <ConversationChat agentId={agent.id} agentName={agent.name} />
+            </div>
+          )}
+
+          {activeTab === "workflows" && (
+            <div className="max-w-3xl mx-auto">
+                  <WorkflowBuilder
+                agents={[{ id: agent.id, name: agent.name }]}
+                onExecute={async (workflow) => {
+                  setWorkflowExecuting(true);
+                  setWorkflowResult(null);
+                  try {
+                    const { data } = await apiClient.post("/workflows/execute", { workflow, input: "Execute workflow" });
+                    if (data.success) {
+                      setWorkflowResult(data.data);
+                      toast.success("Workflow completed");
+                    } else {
+                      toast.error(data.message || "Workflow failed");
+                    }
+                  } catch {
+                    toast.error("Failed to execute workflow");
+                  } finally {
+                    setWorkflowExecuting(false);
+                  }
+                }}
+              />
+
+              {workflowExecuting && (
+                <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                  <Loader2 size={16} className="animate-spin" />
+                  <span className="text-sm">Executing workflow...</span>
+                </div>
+              )}
+
+              {workflowResult && (
+                <Card className="mt-6 border-green-500/20 bg-green-500/5">
+                  <CardHeader className="py-3 border-b border-green-500/10">
+                    <CardTitle className="text-sm flex items-center gap-2 text-green-600">
+                      <CheckCircle2 size={16} />
+                      Workflow Result
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Status:</span>
+                      <Badge variant={workflowResult.status === "COMPLETED" ? "success" : "default"}>
+                        {workflowResult.status}
+                      </Badge>
+                    </div>
+                    {workflowResult.finalOutput && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Final Output</p>
+                        <div className="p-3 rounded-lg bg-muted/30 text-sm whitespace-pre-wrap leading-relaxed">
+                          {workflowResult.finalOutput}
+                        </div>
+                      </div>
+                    )}
+                    {workflowResult.results && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Step Results</p>
+                        <div className="space-y-2">
+                          {Object.entries(workflowResult.results).map(([stepId, step]: [string, any]) => (
+                            <div key={stepId} className="p-2 rounded bg-muted/20 text-xs flex items-center justify-between">
+                              <span className="font-mono">{stepId}</span>
+                              <Badge variant={step.status === "COMPLETED" ? "success" : step.status === "FAILED" ? "danger" : "default"}>
+                                {step.status}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
 
@@ -297,6 +417,10 @@ export default function AgentDetail() {
             </div>
           )}
 
+          {activeTab === "logic-graph" && (
+            <AgentLogicGraph agent={agent} />
+          )}
+
           {activeTab === "runs" && (
             <div className="space-y-4">
               {runs.length > 0 ? (
@@ -334,42 +458,200 @@ export default function AgentDetail() {
           )}
 
           {activeTab === "settings" && (
-            <div className="max-w-2xl mx-auto space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Agent Configuration</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground">System Prompt</Label>
-                    <Textarea
-                      className="min-h-32"
-                      value={agent.prompt}
-                      onChange={() => {}}
-                      placeholder="Agent system instructions..."
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <Label className="text-muted-foreground">Model</Label>
-                      <select className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
-                        <option>gpt-4o</option>
-                        <option>gpt-4-turbo</option>
-                        <option>claude-sonnet-4</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-muted-foreground">Temperature</Label>
-                      <Input type="number" step="0.1" min="0" max="2" defaultValue={0.7} />
-                    </div>
-                  </div>
-                  <Button className="w-full" disabled>Save Changes (Coming Soon)</Button>
-                </CardContent>
-              </Card>
-            </div>
+            <SettingsTab agent={agent} onUpdate={(updated) => setAgent(updated)} />
           )}
         </motion.div>
       </AnimatePresence>
+    </div>
+  );
+}
+
+function SettingsTab({ agent, onUpdate }: { agent: Agent; onUpdate: (a: Agent) => void }) {
+  const [model, setModel] = useState(agent.config.model ?? "gpt-4o");
+  const [temperature, setTemperature] = useState(agent.config.temperature ?? 0.7);
+  const [maxToken, setMaxToken] = useState(agent.config.maxToken ?? 4096);
+  const [saving, setSaving] = useState(false);
+  const [allTools, setAllTools] = useState<any[]>([]);
+  const [toolsLoading, setToolsLoading] = useState(true);
+  const [assigningTool, setAssigningTool] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTools = async () => {
+      try {
+        const res = await toolApi.list();
+        if (res.success) setAllTools(res.data.tools);
+      } catch {
+      } finally {
+        setToolsLoading(false);
+      }
+    };
+    fetchTools();
+  }, []);
+
+  const assignedToolIds = new Set((agent.tools ?? []).map((t: any) => t.tool.id));
+
+  const handleAssignTool = async (toolId: string) => {
+    setAssigningTool(toolId);
+    try {
+      const res = await apiClient.post(`/agents/${agent.id}/tools`, { toolId });
+      if (res.data.success) {
+        const agentRes = await agentApi.getById(agent.id);
+        if (agentRes.success) onUpdate(agentRes.data.agent);
+        toast.success("Tool assigned");
+      }
+    } catch {
+      toast.error("Failed to assign tool");
+    } finally {
+      setAssigningTool(null);
+    }
+  };
+
+  const handleRemoveTool = async (toolId: string) => {
+    try {
+      const res = await apiClient.delete(`/agents/${agent.id}/tools/${toolId}`);
+      if (res.data.success) {
+        const agentRes = await agentApi.getById(agent.id);
+        if (agentRes.success) onUpdate(agentRes.data.agent);
+        toast.success("Tool removed");
+      }
+    } catch {
+      toast.error("Failed to remove tool");
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await agentApi.update(agent.id, {
+        config: { ...agent.config, model, temperature, maxToken },
+      });
+      if (res.success) {
+        onUpdate(res.data.agent);
+        toast.success("Configuration saved");
+      }
+    } catch {
+      toast.error("Failed to save configuration");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Agent Configuration</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-2">
+            <Label className="text-muted-foreground">Model</Label>
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+            >
+              <optgroup label="OpenAI">
+                {MODEL_OPTIONS.filter((m) => m.provider === "openai").map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Anthropic">
+                {MODEL_OPTIONS.filter((m) => m.provider === "anthropic").map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Google (Free)">
+                {MODEL_OPTIONS.filter((m) => m.provider === "gemini").map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="OpenRouter (Free)">
+                {MODEL_OPTIONS.filter((m) => m.provider === "openrouter").map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Temperature ({temperature})</Label>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value={temperature}
+                onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Max Tokens ({maxToken})</Label>
+              <input
+                type="range"
+                min="256"
+                max="16000"
+                step="256"
+                value={maxToken}
+                onChange={(e) => setMaxToken(parseInt(e.target.value))}
+                className="w-full"
+              />
+            </div>
+          </div>
+          <Button className="w-full" onClick={handleSave} disabled={saving}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
+            <Wrench size={16} />
+            Tools
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {toolsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 size={14} className="animate-spin" />
+              Loading tools...
+            </div>
+          ) : allTools.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">No tools available.</p>
+          ) : (
+            allTools.map((tool: any) => {
+              const assigned = assignedToolIds.has(tool.id);
+              return (
+                <div key={tool.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-1.5 rounded ${assigned ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                      <Wrench size={14} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{tool.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{tool.description}</p>
+                    </div>
+                  </div>
+                  {assigned ? (
+                    <Button size="sm" variant="ghost" onClick={() => handleRemoveTool(tool.id)} className="text-red-500 hover:text-red-600 shrink-0">
+                      <Trash2 size={14} />
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => handleAssignTool(tool.id)} disabled={assigningTool === tool.id} className="shrink-0">
+                      {assigningTool === tool.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                      Add
+                    </Button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </CardContent>
+      </Card>
+
+      <OutputDestinations agent={agent} onUpdate={onUpdate} />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import About from "./pages/About";
 import Blog from "./pages/Blog";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import Pricing from "./pages/Pricing";
 
 // Components
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -36,9 +37,9 @@ import Topbar from "./components/layout/Topbar";
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/auth/login" />;
-  
+
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Topbar />
@@ -54,37 +55,38 @@ function App() {
   return (
     <Router>
       <ErrorBoundary>
-      <Toaster position="top-right" richColors theme="dark" />
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/auth/login" element={<Login />} />
-        <Route path="/auth/register" element={<Register />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-        <Route path="/changelog" element={<Changelog />} />
-        <Route path="/roadmap" element={<Roadmap />} />
-        <Route path="/docs" element={<Documentation />} />
-        <Route path="/api-reference" element={<ApiReference />} />
-        <Route path="/guides" element={<Guides />} />
-        <Route path="/support" element={<Support />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        
-        {/* Protected Routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/agents" element={<ProtectedRoute><Agents /></ProtectedRoute>} />
-        <Route path="/agents/new" element={<ProtectedRoute><NewAgent /></ProtectedRoute>} />
-        <Route path="/agents/:id" element={<ProtectedRoute><AgentDetail /></ProtectedRoute>} />
-        <Route path="/runs/:id" element={<ProtectedRoute><RunDetail /></ProtectedRoute>} />
-        <Route path="/tools" element={<ProtectedRoute><Tools /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        
-        {/* Default Route */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+        <Toaster position="top-right" richColors theme="dark" />
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/auth/login" element={<Login />} />
+          <Route path="/auth/register" element={<Register />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+          <Route path="/changelog" element={<Changelog />} />
+          <Route path="/roadmap" element={<Roadmap />} />
+          <Route path="/docs" element={<Documentation />} />
+          <Route path="/api-reference" element={<ApiReference />} />
+          <Route path="/guides" element={<Guides />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/pricing" element={<Pricing />} />
+
+          {/* Protected Routes */}
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/agents" element={<ProtectedRoute><Agents /></ProtectedRoute>} />
+          <Route path="/agents/new" element={<ProtectedRoute><NewAgent /></ProtectedRoute>} />
+          <Route path="/agents/:id" element={<ProtectedRoute><AgentDetail /></ProtectedRoute>} />
+          <Route path="/runs/:id" element={<ProtectedRoute><RunDetail /></ProtectedRoute>} />
+          <Route path="/tools" element={<ProtectedRoute><Tools /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+
+          {/* Default Route */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
       </ErrorBoundary>
     </Router>
   );

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Cpu, Code, Key, Shield, ArrowRight, ExternalLink } from "lucide-react";
+import { Code, Key, Shield } from "lucide-react";
 import { Badge } from "../components/ui/Badge";
 
 const endpoints = [
@@ -72,7 +72,7 @@ export default function ApiReference() {
           <h1 className="text-4xl font-bold mb-2">REST API</h1>
           <p className="text-muted-foreground mb-2">All API endpoints are prefixed with the base URL.</p>
           <div className="flex items-center gap-2 mb-12">
-            <code className="px-3 py-1 rounded-lg bg-muted text-xs font-mono text-muted-foreground">http://localhost:8000</code>
+            <code className="px-3 py-1 rounded-lg bg-muted text-xs font-mono text-muted-foreground">http://localhost:3000</code>
             <Key size={14} className="text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Auth via Bearer token</span>
           </div>

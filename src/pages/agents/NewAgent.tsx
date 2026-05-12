@@ -13,7 +13,15 @@ import {
   Sparkles,
   Route,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Headset,
+  Search,
+  BarChart3,
+  FileText,
+  Code2,
+  Briefcase,
+  Mail,
+  Zap
 } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -24,9 +32,15 @@ import { Card, CardContent } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { toolApi } from "../../api/tool";
 import { agentApi } from "../../api/agent";
+import { AGENT_TEMPLATES } from "../../lib/templates";
 import type { Tool } from "../../types";
 import { toast } from "sonner";
 import { cn } from "../../lib/utils";
+
+const TEMPLATE_ICONS: Record<string, any> = {
+  headset: Headset, search: Search, chart: BarChart3, pencil: FileText,
+  code: Code2, briefcase: Briefcase, mail: Mail, zap: Zap,
+};
 
 const STEPS = [
   { id: 1, title: "Basic Info", icon: Bot },
@@ -374,6 +388,42 @@ export default function NewAgent() {
                     )}
                   </div>
 
+                  <div className="space-y-3">
+                    <Label>Start from a template (optional)</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {AGENT_TEMPLATES.map((tpl) => {
+                        const Icon = TEMPLATE_ICONS[tpl.icon] || Bot;
+                        return (
+                          <button
+                            key={tpl.id}
+                            type="button"
+                            onClick={() => {
+                              setFormData({
+                                name: tpl.name,
+                                description: tpl.description,
+                                purpose: tpl.purpose,
+                                prompt: tpl.prompt,
+                                config: tpl.config,
+                                toolIds: [],
+                              });
+                              toast.success(`"${tpl.name}" template applied`);
+                            }}
+                            className={cn(
+                              "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-center transition-all",
+                              formData.name === tpl.name && formData.prompt === tpl.prompt
+                                ? "border-primary bg-primary/5 shadow-sm"
+                                : "border-border hover:border-primary/30 hover:bg-muted/20"
+                            )}
+                          >
+                            <Icon size={20} className="text-primary" />
+                            <span className="text-[11px] font-medium leading-tight">{tpl.name}</span>
+                            <span className="text-[9px] text-muted-foreground">{tpl.category}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label>Agent Name</Label>
                     <Input 
@@ -421,9 +471,28 @@ export default function NewAgent() {
                       value={formData.config.model}
                       onChange={e => setFormData({...formData, config: {...formData.config, model: e.target.value}})}
                     >
-                      <option value="gpt-4o">GPT-4o (Recommended)</option>
-                      <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                      <optgroup label="OpenAI">
+                        <option value="gpt-4o">GPT-4o (Recommended)</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                      </optgroup>
+                      <optgroup label="Anthropic">
+                        <option value="claude-sonnet-4">Claude Sonnet 4</option>
+                        <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                      </optgroup>
+                      <optgroup label="Google (Free)">
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Free)</option>
+                        <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                      </optgroup>
+                      <optgroup label="OpenRouter (Free)">
+                        <option value="openrouter/free">OpenRouter Free (auto)</option>
+                        <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (free)</option>
+                        <option value="deepseek/deepseek-chat-v3.2:free">DeepSeek V3.2 (free)</option>
+                        <option value="mistralai/mistral-small-3.1:free">Mistral Small 3.1 (free)</option>
+                      </optgroup>
                     </Select>
                   </div>
                   <div className="space-y-2">

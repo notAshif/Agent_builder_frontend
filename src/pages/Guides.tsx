@@ -1,8 +1,5 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { Cpu, BookOpen, Mail, Search, Code, Bot, ArrowRight, Globe, Database } from "lucide-react";
-import { Button } from "../components/ui/Button";
-import { Badge } from "../components/ui/Badge";
+import { BookOpen, Mail, Search, Code, Bot, Globe, Database } from "lucide-react";
 
 const guides = [
   { icon: Mail, title: "Building an Email Assistant", desc: "Create an agent that drafts and sends emails from support tickets.", level: "Beginner", time: "10 min" },

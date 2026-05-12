@@ -22,7 +22,7 @@ export const agentApi = {
     const response = await apiClient.delete<ApiResponse<null>>(`/agents/${id}`);
     return response.data;
   },
-  run: async (id: string, data: { input: string }) => {
+  run: async (id: string, data: { input: string; conversationId?: string }) => {
     const response = await apiClient.post<ApiResponse<{ run: any }>>(`/agents/${id}/run`, data);
     return response.data;
   },

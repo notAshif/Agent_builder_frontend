@@ -2,24 +2,68 @@
 @import "tailwindcss";
 
 @theme {
+  /* Primary - Electric Indigo */
   --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
   --color-primary-foreground: #ffffff;
-  --color-background: #0f0f0f;
+  --color-primary-glow: rgba(99, 102, 241, 0.4);
+
+  /* Background - Deep Space */
+  --color-background: #0a0a0f;
+  --color-background-elevated: #121218;
+
+  /* Foreground */
   --color-foreground: #ffffff;
-  --color-card: #1a1a1a;
-  --color-card-foreground: #ffffff;
-  --color-border: #2a2a2a;
-  --color-muted: #2a2a2a;
-  --color-muted-foreground: #a1a1aa;
+  --color-foreground-muted: #94a3b8;
+
+  /* Glass Card */
+  --color-glass: rgba(255, 255, 255, 0.03);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+  --color-glass-hover: rgba(255, 255, 255, 0.06);
+
+  /* Surface */
+  --color-surface: #16161d;
+  --color-surface-hover: #1c1c25;
+
+  /* Border */
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-light: rgba(255, 255, 255, 0.05);
+
+  /* Muted */
+  --color-muted: rgba(255, 255, 255, 0.05);
+  --color-muted-foreground: #64748b;
+
+  /* Accent Colors */
   --color-accent: #6366f1;
   --color-accent-foreground: #ffffff;
-  
-  --radius-xl: 0.75rem;
+  --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.1);
+  --color-warning: #f59e0b;
+  --color-warning-bg: rgba(245, 158, 11, 0.1);
+  --color-error: #ef4444;
+  --color-error-bg: rgba(239, 68, 68, 0.1);
+  --color-info: #3b82f6;
+  --color-info-bg: rgba(59, 130, 246, 0.1);
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
+
+  /* Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
 }
 
 @layer base {
   :root {
     color-scheme: dark;
+  }
+
+  * {
+    border-color: var(--color-border);
   }
 
   body {
@@ -31,94 +75,275 @@
   }
 
   ::selection {
-    background-color: color-mix(in oklab, var(--color-primary) 30%, transparent);
+    background-color: rgba(99, 102, 241, 0.3);
   }
 }
 
 @layer components {
+  /* Glass Effect */
   .glass {
-    background-color: color-mix(in oklab, var(--color-card) 50%, transparent);
-    border: 1px solid var(--color-border);
-    backdrop-filter: blur(12px);
-  }
-  
-  .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400;
+    background: var(--color-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--color-glass-border);
   }
 
-  .btn-primary {
-    background-color: var(--color-primary);
-    color: var(--color-primary-foreground);
+  .glass-strong {
+    background: rgba(18, 18, 24, 0.8);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid var(--color-border);
+  }
+
+  /* Glass Card */
+  .glass-card {
+    background: var(--color-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    transition-property: all;
-    transition-duration: 150ms;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    background: var(--color-glass-hover);
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1);
+  }
+
+  /* Gradient Text */
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Primary Button */
+  .btn-primary {
+    background: var(--gradient-primary);
+    color: var(--color-primary-foreground);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 1.25rem;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 16px var(--color-primary-glow);
+    border: none;
+    cursor: pointer;
   }
 
   .btn-primary:hover {
-    background-color: color-mix(in oklab, var(--color-primary) 90%, transparent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px var(--color-primary-glow);
   }
 
   .btn-primary:active {
-    transform: scale(0.95);
+    transform: scale(0.98);
   }
 
   .btn-primary:disabled {
     opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
   }
 
+  /* Secondary Button */
   .btn-secondary {
-    background-color: var(--color-muted);
-    color: var(--color-card-foreground);
-    border-radius: var(--radius-xl);
-    padding: 0.5rem 1rem;
+    background: var(--color-surface);
+    color: var(--color-foreground);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 1.25rem;
     font-weight: 500;
-    transition-property: all;
-    transition-duration: 150ms;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--color-border);
   }
 
   .btn-secondary:hover {
-    background-color: color-mix(in oklab, var(--color-muted) 80%, transparent);
+    background: var(--color-surface-hover);
+    border-color: var(--color-primary);
   }
 
-  .btn-secondary:active {
-    transform: scale(0.95);
+  /* Ghost Button */
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-foreground-muted);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 1rem;
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
   }
 
-  .btn-secondary:disabled {
+  .btn-ghost:hover {
+    background: var(--color-muted);
+    color: var(--color-foreground);
+  }
+
+  /* Surface Card */
+  .surface-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .surface-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+
+  /* Input */
+  .input-glass {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    color: var(--color-foreground);
+    transition: all 0.2s ease;
+  }
+
+  .input-glass:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  /* Badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  /* Glow Effects */
+  .glow-primary {
+    box-shadow: 0 0 40px var(--color-primary-glow);
+  }
+
+  .glow-border {
+    position: relative;
+  }
+
+  .glow-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: var(--gradient-primary);
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+  }
+
+  .glow-border:hover::before {
     opacity: 0.5;
   }
 
-  .card-premium {
-    background-color: var(--color-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-xl);
-    padding: 1.5rem;
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-    transition-duration: 150ms;
+  /* Ambient Background */
+  .ambient-glow {
+    position: relative;
+    overflow: hidden;
   }
 
-  .card-premium:hover {
-    border-color: color-mix(in oklab, var(--color-primary) 50%, transparent);
+  .ambient-glow::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, var(--color-primary-glow) 0%, transparent 50%);
+    opacity: 0.3;
+    pointer-events: none;
   }
+
+  /* Animated Border */
+  .animated-border {
+    position: relative;
+    background: var(--color-surface);
+    border-radius: var(--radius-xl);
+  }
+
+  .animated-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--color-primary), transparent, var(--color-primary));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .animated-border:hover::before {
+    opacity: 0.5;
+  }
+}
+
+@layer utilities {
+  /* Animation Classes */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Backdrop Blur */
+  .backdrop-blur-glass {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+}
+
+/* Keyframes */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: var(--color-background);
+  background: var(--color-background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--color-border);
+  background: var(--color-border);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(in oklab, var(--color-muted-foreground) 30%, transparent);
+  background: rgba(99, 102, 241, 0.4);
+}
+
+/* Focus Visible */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }

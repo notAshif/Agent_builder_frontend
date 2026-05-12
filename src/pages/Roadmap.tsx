@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Cpu, CheckCircle2, Clock, Lightbulb, ArrowRight } from "lucide-react";
+import { CheckCircle2, Clock, Lightbulb } from "lucide-react";
 import { Badge } from "../components/ui/Badge";
 
 const roadmap = [

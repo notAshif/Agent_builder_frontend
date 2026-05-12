@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Cpu, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 
 const sections = [
   { title: "Information We Collect", content: "We collect information you provide when creating an account (name, email) and data generated through agent usage (prompts, outputs, execution logs)." },

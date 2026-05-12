@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Cpu, BookOpen, Terminal, Bot, Wrench, Zap, Shield, ArrowRight } from "lucide-react";
+import { BookOpen, Terminal, Bot, Wrench, Zap, Shield, ArrowRight } from "lucide-react";
 import { Button } from "../components/ui/Button";
 
 const sections = [
