@@ -1,6 +1,21 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
+const DEFAULT_LOCAL_API_URL = "http://localhost:3000/api/v1";
+const DEFAULT_PRODUCTION_API_URL = "https://agent-builder-backend.vercel.app/api/v1";
+
+const isLocalHost = () => {
+  if (typeof window === "undefined") return false;
+  return ["localhost", "127.0.0.1"].includes(window.location.hostname);
+};
+
+const appendApiVersion = (url: string) => {
+  const normalizedUrl = url.replace(/\/+$/, "");
+  return normalizedUrl.endsWith("/api/v1") ? normalizedUrl : `${normalizedUrl}/api/v1`;
+};
+
+const API_BASE_URL = appendApiVersion(
+  import.meta.env.VITE_API_URL || (isLocalHost() ? DEFAULT_LOCAL_API_URL : DEFAULT_PRODUCTION_API_URL)
+);
 export { API_BASE_URL };
 
 export const apiClient = axios.create({
