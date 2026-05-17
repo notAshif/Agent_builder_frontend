@@ -16,10 +16,12 @@ import {
   Network,
   CheckCircle2,
   Wrench,
-  Check
+  Check,
+  Key
 } from "lucide-react";
 import { agentApi } from "../api/agent";
 import { toolApi } from "../api/tool";
+import { userApi, type ProviderKeyProvider, type ProviderKeyStatus } from "../api/user";
 import type { Agent, AgentRun } from "../types";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
@@ -467,13 +469,26 @@ export default function AgentDetail() {
 }
 
 function SettingsTab({ agent, onUpdate }: { agent: Agent; onUpdate: (a: Agent) => void }) {
-  const [model, setModel] = useState(agent.config.model ?? "gpt-4o");
+  const [model, setModel] = useState(agent.config.model ?? "openrouter/free");
   const [temperature, setTemperature] = useState(agent.config.temperature ?? 0.7);
   const [maxToken, setMaxToken] = useState(agent.config.maxToken ?? 4096);
   const [saving, setSaving] = useState(false);
   const [allTools, setAllTools] = useState<any[]>([]);
   const [toolsLoading, setToolsLoading] = useState(true);
   const [assigningTool, setAssigningTool] = useState<string | null>(null);
+  const [providerKeys, setProviderKeys] = useState<ProviderKeyStatus[]>([]);
+  const [providerKeyInput, setProviderKeyInput] = useState("");
+  const [savingProviderKey, setSavingProviderKey] = useState(false);
+  const [deletingProviderKey, setDeletingProviderKey] = useState(false);
+
+  const selectedProvider = getModelInfo(model).provider;
+  const keyProvider: ProviderKeyProvider | null =
+    selectedProvider === "openrouter" || selectedProvider === "openai" || selectedProvider === "anthropic"
+      ? selectedProvider
+      : null;
+  const selectedProviderKey = keyProvider
+    ? providerKeys.find((item) => item.provider === keyProvider)
+    : null;
 
   useEffect(() => {
     const fetchTools = async () => {
@@ -486,6 +501,17 @@ function SettingsTab({ agent, onUpdate }: { agent: Agent; onUpdate: (a: Agent) =
       }
     };
     fetchTools();
+  }, []);
+
+  useEffect(() => {
+    const fetchProviderKeys = async () => {
+      try {
+        const res = await userApi.listProviderKeys();
+        if (res.success) setProviderKeys(res.data.providerKeys);
+      } catch {
+      }
+    };
+    fetchProviderKeys();
   }, []);
 
   const assignedToolIds = new Set((agent.tools ?? []).map((t: any) => t.tool.id));
@@ -533,6 +559,49 @@ function SettingsTab({ agent, onUpdate }: { agent: Agent; onUpdate: (a: Agent) =
       toast.error("Failed to save configuration");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveProviderKey = async () => {
+    if (!keyProvider) return;
+    if (!providerKeyInput.trim()) {
+      toast.error("Paste a provider API key first");
+      return;
+    }
+
+    setSavingProviderKey(true);
+    try {
+      const res = await userApi.saveProviderKey(keyProvider, providerKeyInput.trim());
+      if (res.success) {
+        setProviderKeys((prev) => [
+          ...prev.filter((item) => item.provider !== keyProvider),
+          res.data.providerKey,
+        ]);
+        setProviderKeyInput("");
+        toast.success(`${keyProvider} key saved`);
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Provider key is invalid");
+    } finally {
+      setSavingProviderKey(false);
+    }
+  };
+
+  const handleDeleteProviderKey = async () => {
+    if (!keyProvider) return;
+    setDeletingProviderKey(true);
+    try {
+      const res = await userApi.deleteProviderKey(keyProvider);
+      if (res.success) {
+        setProviderKeys((prev) =>
+          prev.map((item) => item.provider === keyProvider ? { ...item, hasKey: false, updatedAt: null, lastTime: null } : item)
+        );
+        toast.success(`${keyProvider} key removed`);
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to remove provider key");
+    } finally {
+      setDeletingProviderKey(false);
     }
   };
 
@@ -602,6 +671,57 @@ function SettingsTab({ agent, onUpdate }: { agent: Agent; onUpdate: (a: Agent) =
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Key size={16} />
+            Provider Key
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {keyProvider ? (
+            <>
+              <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3">
+                <div>
+                  <p className="text-sm font-medium capitalize">{keyProvider}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedProviderKey?.hasKey
+                      ? `Saved${selectedProviderKey.updatedAt ? ` ${formatDistanceToNow(new Date(selectedProviderKey.updatedAt), { addSuffix: true })}` : ""}`
+                      : "No user key saved. The server fallback key will be used if configured."}
+                  </p>
+                </div>
+                <Badge variant={selectedProviderKey?.hasKey ? "success" : "outline"}>
+                  {selectedProviderKey?.hasKey ? "User key active" : "Fallback"}
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={providerKeyInput}
+                  onChange={(e) => setProviderKeyInput(e.target.value)}
+                  placeholder={`Paste ${keyProvider} API key`}
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
+                />
+                <Button onClick={handleSaveProviderKey} disabled={savingProviderKey} className="shrink-0">
+                  {savingProviderKey && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Key
+                </Button>
+              </div>
+              {selectedProviderKey?.hasKey && (
+                <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={handleDeleteProviderKey} disabled={deletingProviderKey}>
+                  {deletingProviderKey ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 size={14} />}
+                  Remove saved key
+                </Button>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              User keys are available for OpenRouter, OpenAI, and Anthropic models. Select one of those providers to save a local key.
+            </p>
+          )}
         </CardContent>
       </Card>
 

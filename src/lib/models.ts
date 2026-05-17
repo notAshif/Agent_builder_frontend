@@ -16,7 +16,7 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { value: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite", provider: "gemini", badge: "Gemini" },
   { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash", provider: "gemini", badge: "Gemini" },
   { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro", provider: "gemini", badge: "Gemini" },
-  { value: "openrouter/free", label: "OpenRouter Free (auto)", provider: "openrouter", badge: "OpenRouter" },
+  { value: "openrouter/free", label: "OpenRouter Free", provider: "openrouter", badge: "OpenRouter" },
   { value: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B (free)", provider: "openrouter", badge: "OpenRouter" },
   { value: "deepseek/deepseek-chat-v3.2:free", label: "DeepSeek V3.2 (free)", provider: "openrouter", badge: "OpenRouter" },
   { value: "mistralai/mistral-small-3.1:free", label: "Mistral Small 3.1 (free)", provider: "openrouter", badge: "OpenRouter" },

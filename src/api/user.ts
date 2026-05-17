@@ -11,6 +11,15 @@ export interface ApiKey {
   lastTime?: string | null;
 }
 
+export type ProviderKeyProvider = "openrouter" | "openai" | "anthropic";
+
+export interface ProviderKeyStatus {
+  provider: ProviderKeyProvider;
+  hasKey: boolean;
+  updatedAt: string | null;
+  lastTime: string | null;
+}
+
 const normalizeApiKey = (apiKey: any): ApiKey => ({
   ...apiKey,
   createdAt: apiKey.createdAt ?? apiKey.createAt,
@@ -45,6 +54,18 @@ export const userApi = {
   },
   deleteApiKey: async (id: string) => {
     const response = await apiClient.delete<ApiResponse<null>>(`/users/api-keys/${id}`);
+    return response.data;
+  },
+  listProviderKeys: async () => {
+    const response = await apiClient.get<ApiResponse<{ providerKeys: ProviderKeyStatus[] }>>("/users/provider-keys");
+    return response.data;
+  },
+  saveProviderKey: async (provider: ProviderKeyProvider, key: string) => {
+    const response = await apiClient.put<ApiResponse<{ providerKey: ProviderKeyStatus }>>(`/users/provider-keys/${provider}`, { key });
+    return response.data;
+  },
+  deleteProviderKey: async (provider: ProviderKeyProvider) => {
+    const response = await apiClient.delete<ApiResponse<null>>(`/users/provider-keys/${provider}`);
     return response.data;
   },
 };

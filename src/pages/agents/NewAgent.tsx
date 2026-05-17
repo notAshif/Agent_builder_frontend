@@ -163,7 +163,7 @@ const buildAgentBlueprint = (rawPrompt: string, tools: Tool[]) => {
     prompt: systemPrompt,
     toolIds: matchingTools.map((tool) => tool.id),
     config: {
-      model: "gpt-4o",
+      model: "openrouter/free",
       maxToken: purpose === "CODING" || purpose === "DATA_ANALYSIS" ? 8192 : 4096,
       temperature: purpose === "CONTENT_CREATION" ? 0.8 : purpose === "CODING" || purpose === "DATA_ANALYSIS" ? 0.3 : 0.6,
       workflow,
@@ -195,7 +195,7 @@ export default function NewAgent() {
     purpose: "GENERAL",
     prompt: "",
     config: {
-      model: "gpt-4o",
+      model: "openrouter/free",
       maxToken: 4096,
       temperature: 0.7,
     },
@@ -488,7 +488,7 @@ export default function NewAgent() {
                         <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                       </optgroup>
                       <optgroup label="OpenRouter (Free)">
-                        <option value="openrouter/free">OpenRouter Free (auto)</option>
+                        <option value="openrouter/free">OpenRouter Free (Recommended)</option>
                         <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (free)</option>
                         <option value="deepseek/deepseek-chat-v3.2:free">DeepSeek V3.2 (free)</option>
                         <option value="mistralai/mistral-small-3.1:free">Mistral Small 3.1 (free)</option>
